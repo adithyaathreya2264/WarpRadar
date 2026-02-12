@@ -203,7 +203,7 @@ python -m warpradar --port 5557
 - **Disk Space**: Check available space in `~/WarpDownloads`
 - **Permissions**: Verify write permissions to download directory
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [ ] **File Selection Dialog** - Native file picker integration
 - [ ] **Transfer History** - Persistent log of all transfers
