@@ -205,11 +205,11 @@ python -m warpradar --port 5557
 
 ## Roadmap
 
-- [ ] **File Selection Dialog** - Native file picker integration
-- [ ] **Transfer History** - Persistent log of all transfers
-- [ ] **Black Hole Directory** - Auto-share designated folder
-- [ ] **Parallel Transfers** - Multi-connection for large files
-- [ ] **Remote Commands** - Optional SSH-like shell access (trusted networks only)
+- **File Selection Dialog** - Native file picker integration
+- **Transfer History** - Persistent log of all transfers
+- **Black Hole Directory** - Auto-share designated folder
+- **Parallel Transfers** - Multi-connection for large files
+- **Remote Commands** - Optional SSH-like shell access (trusted networks only)
 
 ## License
 
