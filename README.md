@@ -1,4 +1,4 @@
-# WarpRadar 🛸
+# WarpRadar 
 
 **Decentralized Terminal File Sharing with Zero-Config Discovery**
 
@@ -7,35 +7,35 @@ A retro-futuristic TUI application that transforms local network file sharing in
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 
-## ✨ Features
+## Features
 
-### 🔍 **Passive Discovery**
+### **Passive Discovery**
 - Zero-config peer discovery via UDP Multicast
 - Peers appear automatically on startup - no IP addresses to remember
 - Real-time RTT-based distance visualization on radar
 
-### 🔐 **Military-Grade Security**
+### **Military-Grade Security**
 - End-to-end encryption with Diffie-Hellman key exchange
 - AES-256-GCM authenticated encryption per session
 - SHA-256 integrity verification for every transfer
 
-### 🎨 **Cyberpunk TUI**
+### **Cyberpunk TUI**
 - Animated radar with sweeping scan line (Sin/Cos rendering)
 - Neon green color scheme with smooth animations
 - Real-time transfer progress with speed & ETA
 - Toast notifications for network events
 
-### ⚡ **Zero-Friction Workflow**
+### **Zero-Friction Workflow**
 - **Warp Clipboard**: Copy on one device, paste on another (Press `C`)
 - **Beam Files**: Select peer and send files instantly (Press `F`)
 - **Stealth Mode**: Go invisible while still discovering others (Press `S`)
 
-### 🛡️ **Advanced Features**
+### **Advanced Features**
 - Streaming transfers (low memory usage for large files)
 - Automatic peer expiration (TTL-based)
 - Cross-platform: Windows, Linux, macOS
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -69,7 +69,7 @@ python -m warpradar
 3. **Select** - Use arrow keys (↑/↓) to select a peer
 4. **Warp** - Press `C` to send clipboard or `F` to beam a file
 
-## 📊 Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -106,7 +106,7 @@ python -m warpradar
 └─────────────────────────────────────────────────┘
 ```
 
-## 🎮 Keyboard Controls
+## Keyboard Controls
 
 | Key | Action |
 |-----|--------|
@@ -117,7 +117,7 @@ python -m warpradar
 | `↓/J` | Select next peer |
 | `Q` | Quit application |
 
-## 🔧 Configuration
+## Configuration
 
 Settings are managed in `warpradar/config.py`:
 
@@ -134,7 +134,7 @@ radar_sweep_speed = 3.0    # seconds per revolution
 fps = 30                   # Animation frame rate
 ```
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 WarpRadar/
@@ -168,7 +168,7 @@ WarpRadar/
 └── README.md
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Local Testing (Single Machine)
 
@@ -189,7 +189,7 @@ python -m warpradar --port 5557
 3. Observe peer discovery on the radar
 4. Test file transfers and clipboard warp
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Peers Not Appearing
 
@@ -211,17 +211,6 @@ python -m warpradar --port 5557
 - [ ] **Parallel Transfers** - Multi-connection for large files
 - [ ] **Remote Commands** - Optional SSH-like shell access (trusted networks only)
 
-## 📜 License
+## License
 
 MIT License - See LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- Built with [Textual](https://github.com/Textualize/textual) - Amazing TUI framework
-- Inspired by cyberpunk aesthetics and the frustration of manual IP entry
-
----
-
-**Made with 💚 by WarpRadar Team**
-
-*"The future of file sharing is decentralized, encrypted, and looks like a sci-fi movie."*
