@@ -1,0 +1,126 @@
+/* WarpRadar TUI Styles - Cyberpunk Neon Green Theme */
+
+/* Global styles */
+Screen {
+    background: #0d0d0d;
+}
+
+/* Header styling */
+#header {
+    dock: top;
+    height: 3;
+    background: #0d0d0d;
+    border-bottom: solid #00ff41;
+    padding: 0 2;
+}
+
+#title {
+    text-align: center;
+    text-style: bold;
+    color: #00ff41;
+}
+
+#status {
+    dock: right;
+    width: auto;
+    color: #00ff41;
+}
+
+/* Main content area */
+#main-container {
+    layout: horizontal;
+}
+
+/* Radar panel */
+#radar-panel {
+    width: 2fr;
+    height: 100%;
+    border: solid #005f00;
+    border-title-color: #00ff41;
+    border-title-style: bold;
+    padding: 0 1;
+}
+
+/* Peer list panel */
+#peer-panel {
+    width: 1fr;
+    min-width: 35;
+    height: 100%;
+    border: solid #005f00;
+    border-title-color: #00ff41;
+    border-title-style: bold;
+    padding: 0 1;
+}
+
+/* Progress bar area */
+#progress-panel {
+    dock: bottom;
+    height: 5;
+    background: #0d0d0d;
+    border-top: solid #005f00;
+    padding: 0 2;
+}
+
+/* Footer with keybindings */
+#footer {
+    dock: bottom;
+    height: 1;
+    background: #1a1a1a;
+    color: #00ff41;
+    text-align: center;
+}
+
+/* Toast notifications */
+ToastWidget {
+    background: #1a1a1a;
+    padding: 0 1;
+}
+
+/* Modal dialogs */
+TransferRequestModal #dialog {
+    background: #0d0d0d;
+    border: thick #00ff41;
+}
+
+TransferRequestModal #title {
+    color: #ff5f00;
+}
+
+TransferRequestModal Button {
+    background: #005f00;
+    color: #00ff41;
+}
+
+TransferRequestModal Button:hover {
+    background: #00ff41;
+    color: #0d0d0d;
+}
+
+/* Buttons */
+Button.success {
+    background: #005f00;
+    color: #00ff41;
+}
+
+Button.error {
+    background: #5f0000;
+    color: #ff5f00;
+}
+
+/* Log area */
+#log-panel {
+    dock: bottom;
+    height: 6;
+    background: #0a0a0a;
+    border-top: solid #005f00;
+    padding: 0 1;
+    overflow-y: auto;
+}
+
+.log-entry {
+    color: #00ff41;
+}
+
+.log-time {
+    color: #005f00;
+}
