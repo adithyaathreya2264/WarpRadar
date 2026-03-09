@@ -1,139 +1,136 @@
-# WarpRadar 
-## Still under development
+# WarpRadar
 
-**Decentralized Terminal File Sharing with Zero-Config Discovery**
+**Decentralized Terminal File Sharing & LAN Messaging**
 
-A retro-futuristic TUI application that transforms local network file sharing into an immersive cyberpunk experience. Drop the manual IP configuration and watch your peers appear as glowing blips on an animated radar display.
+WarpRadar is a retro-futuristic TUI for secure local network communication — share files, beam clipboards, and chat in real-time, all encrypted, zero configuration required.
 
-![License](https://img.shields.io/badge/license-MIT-green)
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+---
 
 ## Features
 
-### **Passive Discovery**
-- Zero-config peer discovery via UDP Multicast
-- Peers appear automatically on startup - no IP addresses to remember
-- Real-time RTT-based distance visualization on radar
+### Passive Peer Discovery
+- Zero-config discovery via UDP Multicast — no IPs to configure
+- Peers appear as animated blips on a live radar display
+- Real-time RTT-based signal strength visualization
 
-### **Military-Grade Security**
-- End-to-end encryption with Diffie-Hellman key exchange
-- AES-256-GCM authenticated encryption per session
-- SHA-256 integrity verification for every transfer
+### LAN Chat
+- Real-time encrypted messaging between any two WarpRadar peers
+- Scrollable chat history with color-coded sent/received messages
+- Auto-selects the sender so you can reply instantly
 
-### **Cyberpunk TUI**
-- Animated radar with sweeping scan line (Sin/Cos rendering)
-- Neon green color scheme with smooth animations
-- Real-time transfer progress with speed & ETA
-- Toast notifications for network events
+### Encrypted File Transfer
+- Beam any file to a selected peer with a single keypress
+- Streaming transfer (low memory usage for large files)
+- SHA-256 integrity verification + AES-256-GCM encryption
 
-### **Zero-Friction Workflow**
-- **Warp Clipboard**: Copy on one device, paste on another (Press `C`)
-- **Beam Files**: Select peer and send files instantly (Press `F`)
-- **Stealth Mode**: Go invisible while still discovering others (Press `S`)
+### Clipboard Warp
+- Copy on one machine, paste on another in under a second
+- Fully encrypted in transit
 
-### **Advanced Features**
-- Streaming transfers (low memory usage for large files)
-- Automatic peer expiration (TTL-based)
-- Cross-platform: Windows, Linux, macOS
+### Security
+- Diffie-Hellman (2048-bit) ephemeral key exchange per session
+- AES-256-GCM authenticated encryption
+- SHA-256 file integrity verification
+
+### Cyberpunk TUI
+- Animated radar with sweeping scan line
+- Neon green cyberpunk theme
+- Real-time progress bars with speed & ETA
+- Toast notifications and modal dialogs
+
+---
 
 ## Quick Start
 
 ### Installation
 
 ```bash
-# Clone the repository
-cd e:\Personal_Projects\WrapRader
+# Clone and enter directory
+git clone https://github.com/adithyaathreya2264/WarpRadar
+cd WarpRadar
 
-# Activate virtual environment (Windows)
+# Create and activate virtual environment (Windows)
+python -m venv .venv
 .\.venv\Scripts\activate
 
-# Verify dependencies are installed
-pip list | findstr textual
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 ### Running WarpRadar
 
 ```bash
-# Start the application
-#In Terminal 1: Activate Environment first and then:
+# Terminal 1 (default port 5556)
 python -m warpradar
 
-#In Terminal 2: Activate environment first and then:
+# Terminal 2 (different port for same-machine testing)
 $env:WARPRADAR_TCP_PORT=5557
 python -m warpradar
 ```
 
 ### First-Time Usage
 
-1. **Launch** - Open WarpRadar on multiple devices on the same network
-2. **Discover** - Peers appear automatically as blips on your radar
-3. **Select** - Use arrow keys (↑/↓) to select a peer
-4. **Warp** - Press `C` to send clipboard or `F` to beam a file
+1. **Launch** — Start WarpRadar on one or more devices on the same LAN
+2. **Discover** — Peers appear automatically as blips on the radar
+3. **Select** — Use `↑`/`↓` arrow keys to highlight a peer
+4. **Act** — Press `F` to beam a file, `M` to chat, `C` to warp clipboard
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────┐
-│              Layer 1: Discovery                 │
-│  UDP Multicast (224.0.0.1:5555)                │
-│  • Beacon: Broadcasts heartbeat every 2s       │
-│  • Listener: Discovers peers passively         │
-│  • Registry: Manages active peers (TTL=10s)    │
-└─────────────────────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────┐
-│              Layer 2: Transport                 │
-│  TCP Sockets (Port 5556)                       │
-│  • Handshake: DH key exchange                  │
-│  • Streamer: 4KB chunks with encryption        │
-│  • Server: Accepts incoming transfers          │
-└─────────────────────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────┐
-│              Layer 3: Security                  │
-│  E2E Encryption                                │
-│  • Diffie-Hellman: 2048-bit ephemeral keys     │
-│  • AES-256-GCM: Session-based encryption       │
-│  • SHA-256: File integrity verification        │
-└─────────────────────────────────────────────────┘
-                      ↓
-┌─────────────────────────────────────────────────┐
-│              Layer 4: Interface                 │
-│  Textual TUI Framework                         │
-│  • Radar: Animated scan with peer blips       │
-│  • Peer List: OS icons & signal strength       │
-│  • Progress: Real-time transfer stats          │
-│  • Notifications: Modal dialogs & toasts       │
-└─────────────────────────────────────────────────┘
-```
+---
 
 ## Keyboard Controls
 
 | Key | Action |
 |-----|--------|
 | `F` | Beam File to selected peer |
+| `M` | Open chat input to send a message |
 | `C` | Warp Clipboard to selected peer |
-| `S` | Toggle Stealth Mode |
-| `↑/K` | Select previous peer |
-| `↓/J` | Select next peer |
-| `Q` | Quit application |
+| `S` | Toggle Stealth Mode (invisible to others) |
+| `B` | Toggle Black Hole (auto-share watch folder) |
+| `↑` / `K` | Select previous peer |
+| `↓` / `J` | Select next peer |
+| `Q` | Quit |
 
-## Configuration
+---
 
-Settings are managed in `warpradar/config.py`:
+## Architecture
 
-```python
-# Network settings
-multicast_group = "224.0.0.1"
-multicast_port = 5555
-tcp_port = 5556
-chunk_size = 4096  # 4KB chunks
-
-# UI settings
-primary_color = "#00ff41"  # Neon green
-radar_sweep_speed = 3.0    # seconds per revolution
-fps = 30                   # Animation frame rate
 ```
+┌──────────────────────────────────────────────────┐
+│              Layer 1: Discovery                  │
+│  UDP Multicast (224.0.0.1:5555)                 │
+│  • Beacon: Broadcasts heartbeat every 2s        │
+│  • Listener: Discovers peers passively          │
+│  • Registry: Manages active peers (TTL=10s)     │
+└──────────────────────────────────────────────────┘
+                      ↓
+┌──────────────────────────────────────────────────┐
+│              Layer 2: Transport                  │
+│  TCP Sockets (default port 5556)                │
+│  • Handshake: DH key exchange                   │
+│  • Streamer: 4KB chunks with encryption         │
+│  • Chat: MESSAGE_PUSH / MESSAGE_ACK protocol    │
+│  • Server: Accepts transfers, messages & clips  │
+└──────────────────────────────────────────────────┘
+                      ↓
+┌──────────────────────────────────────────────────┐
+│              Layer 3: Security                   │
+│  • Diffie-Hellman: 2048-bit ephemeral keys      │
+│  • AES-256-GCM: Per-session encryption          │
+│  • SHA-256: File integrity verification         │
+└──────────────────────────────────────────────────┘
+                      ↓
+┌──────────────────────────────────────────────────┐
+│              Layer 4: Interface                  │
+│  Textual TUI Framework                          │
+│  • Radar: Animated sweep with peer blips        │
+│  • Peer List: OS icons & signal strength        │
+│  • Chat Panel: Scrollable real-time messages    │
+│  • Progress: Live transfer stats                │
+│  • Notifications: Modal dialogs & toasts        │
+└──────────────────────────────────────────────────┘
+```
+
+---
 
 ## Project Structure
 
@@ -146,72 +143,69 @@ WarpRadar/
 │   │   └── registry.py     # Peer management
 │   ├── transport/          # TCP transfer layer
 │   │   ├── protocol.py     # Binary message protocol
-│   │   ├── handshake.py    # Connection establishment
-│   │   ├── streamer.py     # File streaming
-│   │   ├── server.py       # TCP listener
-│   │   └── client.py       # Transfer initiator
+│   │   ├── handshake.py    # DH key exchange + session setup
+│   │   ├── streamer.py     # Encrypted file streaming
+│   │   ├── server.py       # Incoming connection handler
+│   │   └── client.py       # File, clipboard & chat sender
 │   ├── security/           # Encryption layer
-│   │   ├── crypto.py       # DH + AES-GCM
+│   │   ├── crypto.py       # DH + AES-256-GCM
 │   │   └── integrity.py    # SHA-256 checksums
 │   ├── ui/                 # TUI components
 │   │   ├── radar.py        # Animated radar widget
 │   │   ├── peer_list.py    # Peer list panel
-│   │   ├── progress.py     # Progress bar
+│   │   ├── chat.py         # Real-time chat panel
+│   │   ├── progress.py     # Transfer progress bar
 │   │   ├── notifications.py # Modals & toasts
-│   │   └── styles.tcss     # Textual CSS
+│   │   └── styles.tcss     # Textual CSS theme
 │   ├── utils/              # Utilities
 │   │   ├── system.py       # OS detection
-│   │   └── clipboard.py    # Cross-platform clipboard
-│   ├── app.py              # Main application
+│   │   ├── clipboard.py    # Cross-platform clipboard
+│   │   ├── history.py      # Transfer history
+│   │   └── blackhole.py    # Auto-share watch folder
+│   ├── app.py              # Main application orchestrator
 │   ├── config.py           # Configuration
-│   └── __main__.py         # Entry point
+│   └── __main__.py         # Entry point with CLI args
 ├── requirements.txt
 └── README.md
 ```
 
-## Testing
+---
 
-### Local Testing (Single Machine)
+## Configuration
 
-```bash
-# Terminal 1
-python -m warpradar
+Override defaults via environment variables before launching:
 
-# Terminal 2 (different port)
-python -m warpradar --port 5557
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WARPRADAR_TCP_PORT` | `5556` | TCP port for incoming transfers |
+| `WARPRADAR_MULTICAST_PORT` | `5555` | UDP multicast port for discovery |
+
+Or edit `warpradar/config.py` directly:
+
+```python
+multicast_group = "224.0.0.1"
+multicast_port  = 5555
+tcp_port        = 5556       # overridden by env var
+chunk_size      = 4096       # bytes per transfer chunk
+primary_color   = "#00ff41"  # neon green
 ```
 
-> **Note**: On the same machine, you'll need to modify the code to allow different ports for testing.
-
-### Network Testing
-
-1. Install WarpRadar on 2+ devices on the same LAN
-2. Launch simultaneously
-3. Observe peer discovery on the radar
-4. Test file transfers and clipboard warp
+---
 
 ## Troubleshooting
 
 ### Peers Not Appearing
+- Ensure UDP port 5555 is not blocked by your firewall
+- Verify both devices are on the same subnet
+- Some routers block multicast — check router settings
 
-- **Firewall**: Ensure UDP port 5555 and TCP port 5556 are open
-- **Network**: Verify devices are on the same subnet
-- **Multicast**: Some routers block multicast traffic - check router settings
+### Transfer or Message Fails
+- Ensure both instances are running the **same version**
+- Check available disk space in `~/WarpDownloads`
+- Verify TCP port (5556/5557) is not blocked
 
-### Transfer Fails
-
-- **Encryption**: Ensure both peers have identical WarpRadar versions
-- **Disk Space**: Check available space in `~/WarpDownloads`
-- **Permissions**: Verify write permissions to download directory
-
-## Roadmap
-
-- **File Selection Dialog** - Native file picker integration
-- **Transfer History** - Persistent log of all transfers
-- **Black Hole Directory** - Auto-share designated folder
-- **Parallel Transfers** - Multi-connection for large files
-- **Remote Commands** - Optional SSH-like shell access (trusted networks only)
+---
 
 ## License
 
-MIT License - See LICENSE file for details
+MIT License
