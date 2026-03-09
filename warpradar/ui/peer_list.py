@@ -67,6 +67,14 @@ class PeerListWidget(Widget):
             self.selected_index = (self.selected_index - 1) % len(self._peers)
             self._notify_selection()
     
+    def select_peer(self, peer: Peer) -> None:
+        """Select a specific peer by object, updating the visual highlight."""
+        for i, p in enumerate(self._peers):
+            if p.ip == peer.ip and p.port == peer.port:
+                self.selected_index = i
+                self._notify_selection()
+                break
+    
     def get_selected_peer(self) -> Optional[Peer]:
         """Get currently selected peer."""
         if not self._peers:
