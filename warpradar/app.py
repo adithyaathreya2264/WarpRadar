@@ -16,13 +16,14 @@ from .discovery.beacon import Beacon
 from .discovery.listener import Listener
 from .discovery.registry import PeerRegistry, Peer
 from .transport.server import TransferServer
-from .transport.client import send_file, push_clipboard
+from .transport.client import send_file, push_clipboard, send_chat_message
 from .transport.streamer import TransferProgress
 from .ui.radar import RadarWidget
 from .ui.peer_list import PeerListWidget
 from .ui.progress import ProgressWidget
 from .ui.notifications import ToastWidget, TransferRequestModal
 from .ui.file_picker import QuickFilePickerModal, FilePickerModal
+from .ui.chat import ChatWidget
 from .utils.system import get_system_info
 from .utils.clipboard import get_clipboard, set_clipboard
 from .utils.history import TransferHistory
@@ -38,6 +39,7 @@ class WarpRadarApp(App):
     
     BINDINGS = [
         Binding("f", "send_file", "Beam File", show=True),
+        Binding("m", "send_message", "Send Message", show=True),
         Binding("c", "warp_clipboard", "Warp Clipboard", show=True),
         Binding("s", "toggle_stealth", "Stealth Mode", show=True),
         Binding("b", "toggle_blackhole", "Black Hole", show=True),
@@ -68,6 +70,7 @@ class WarpRadarApp(App):
         self._progress: Optional[ProgressWidget] = None
         self._toast: Optional[ToastWidget] = None
         self._status: Optional[Static] = None
+        self._chat: Optional[ChatWidget] = None
         
         # Selected peer
         self._selected_peer: Optional[Peer] = None
@@ -94,6 +97,11 @@ class WarpRadarApp(App):
             with Vertical(id="peer-panel"):
                 self._peer_list = PeerListWidget(id="peer-list")
                 yield self._peer_list
+            
+            with Vertical(id="chat-panel"):
+                self._chat = ChatWidget(id="chat")
+                self._chat.border_title = "◈ COMMS CHANNEL"
+                yield self._chat
         
         with Container(id="progress-panel"):
             self._progress = ProgressWidget(id="progress")
@@ -146,6 +154,7 @@ class WarpRadarApp(App):
                 on_transfer_progress=self._handle_transfer_progress,
                 on_transfer_complete=self._handle_transfer_complete,
                 on_clipboard_received=self._handle_clipboard_received,
+                on_message_received=self._handle_message_received,
             )
             await self._server.start()
             
@@ -305,6 +314,10 @@ class WarpRadarApp(App):
         set_clipboard(text)
         self._show_toast(f"Clipboard received ({len(text)} chars)", "success")
     
+    def on_chat_widget_message_send(self, event: ChatWidget.MessageSend) -> None:
+        """Route chat input to the background send worker."""
+        self._send_message_worker(event.text)
+    
     def _show_toast(self, message: str, msg_type: str = "info") -> None:
         """Show a toast notification."""
         if self._toast:
@@ -459,6 +472,60 @@ class WarpRadarApp(App):
         else:
             self._show_toast("Failed to warp clipboard", "error")
     
+    def action_send_message(self) -> None:
+        """Focus the chat input box so the user can type a message."""
+        if not self._selected_peer:
+            self._show_toast("No peer selected", "warning")
+            return
+        if self._chat:
+            try:
+                input_box = self._chat.query_one("#chat-input")
+                input_box.focus()
+            except Exception:
+                pass
+
+    @work
+    async def _send_message_worker(self, text: str) -> None:
+        """Send a chat message in a background worker."""
+        if not self._selected_peer:
+            return
+        peer = self._selected_peer
+        hostname = self._system_info.hostname
+
+        # Show immediately in own chat as sent
+        if self._chat:
+            self._chat.add_message(hostname, text, is_self=True)
+
+        success = await send_chat_message(
+            peer_ip=peer.ip,
+            peer_port=peer.port,
+            sender_hostname=hostname,
+            text=text,
+        )
+        if not success:
+            self._show_toast("Message failed to send", "error")
+
+    async def _handle_message_received(self, sender: str, text: str) -> None:
+        """Handle an incoming chat message from another peer."""
+        # Display in chat log
+        if self._chat:
+            self._chat.add_message(sender, text, is_self=False)
+        self._show_toast(f"◀ {sender}: {text[:40]}", "info")
+
+        # Auto-select the sender as the active peer so the user can reply
+        # immediately without having to navigate the peer list
+        if not self._selected_peer and self._peer_registry:
+            peers = await self._peer_registry.get_all_peers()
+            for peer in peers:
+                if peer.hostname == sender:
+                    self._selected_peer = peer
+                    if self._peer_list:
+                        self._peer_list.select_peer(peer)
+                    self._show_toast(f"Auto-selected {sender} for reply", "info")
+                    break
+
+
+
     async def _handle_blackhole_file(self, file_path: Path) -> None:
         """Handle new file in Black Hole directory."""
         if not self._blackhole_enabled or not self._selected_peer:
