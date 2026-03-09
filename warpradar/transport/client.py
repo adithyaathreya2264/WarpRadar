@@ -138,3 +138,41 @@ async def push_clipboard(
         
     except Exception:
         return False
+
+
+async def send_chat_message(
+    peer_ip: str,
+    peer_port: int,
+    sender_hostname: str,
+    text: str,
+) -> bool:
+    """
+    Send a chat message to a peer.
+
+    Args:
+        peer_ip: Peer's IP address
+        peer_port: Peer's TCP port
+        sender_hostname: Our hostname (shown to receiver)
+        text: Message text
+
+    Returns:
+        True if message delivered successfully
+    """
+    from .protocol import ChatMessage
+    try:
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(peer_ip, peer_port),
+            timeout=10.0,
+        )
+        msg = ChatMessage(sender=sender_hostname, text=text)
+        await send_message(writer, MessageType.MESSAGE_PUSH, msg.pack())
+
+        # Wait for ACK
+        msg_type, _ = await receive_message(reader, timeout=10.0)
+        success = msg_type == MessageType.MESSAGE_ACK
+
+        writer.close()
+        await writer.wait_closed()
+        return success
+    except Exception:
+        return False
