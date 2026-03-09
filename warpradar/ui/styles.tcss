@@ -44,12 +44,19 @@ Screen {
 /* Peer list panel */
 #peer-panel {
     width: 1fr;
-    min-width: 35;
+    min-width: 30;
     height: 100%;
     border: solid #005f00;
     border-title-color: #00ff41;
     border-title-style: bold;
     padding: 0 1;
+}
+
+/* Chat panel */
+#chat-panel {
+    width: 1.5fr;
+    min-width: 35;
+    height: 100%;
 }
 
 /* Progress bar area */
