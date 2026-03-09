@@ -26,6 +26,10 @@ class MessageType(IntEnum):
     # Utility messages
     PING = 0x30           # Ping peer
     PONG = 0x31           # Pong response
+    
+    # Chat messages
+    MESSAGE_PUSH = 0x40   # Send a chat message
+    MESSAGE_ACK  = 0x41   # Chat message received
 
 
 # Header format: | Magic (4B) | Version (1B) | MsgType (1B) | Length (4B) |
@@ -222,3 +226,37 @@ class ClipboardPush:
     def unpack(cls, data: bytes) -> Optional["ClipboardPush"]:
         """Unpack from payload bytes."""
         return cls(content=data)
+
+
+@dataclass
+class ChatMessage:
+    """A chat message sent between peers."""
+    sender: str   # Sender hostname
+    text: str     # Message text
+    
+    def pack(self) -> bytes:
+        """Pack into payload bytes."""
+        sender_bytes = self.sender.encode("utf-8")[:64]
+        text_bytes = self.text.encode("utf-8")[:1024]
+        return struct.pack(
+            f"!B{len(sender_bytes)}sH{len(text_bytes)}s",
+            len(sender_bytes),
+            sender_bytes,
+            len(text_bytes),
+            text_bytes,
+        )
+    
+    @classmethod
+    def unpack(cls, data: bytes) -> Optional["ChatMessage"]:
+        """Unpack from payload bytes."""
+        try:
+            sender_len = data[0]
+            offset = 1
+            sender = data[offset:offset + sender_len].decode("utf-8")
+            offset += sender_len
+            text_len = struct.unpack("!H", data[offset:offset + 2])[0]
+            offset += 2
+            text = data[offset:offset + text_len].decode("utf-8")
+            return cls(sender=sender, text=text)
+        except (IndexError, struct.error, UnicodeDecodeError):
+            return None
