@@ -28,6 +28,7 @@ class TransferServer:
         on_transfer_progress: Optional[Callable[[TransferProgress], Awaitable[None]]] = None,
         on_transfer_complete: Optional[Callable[[Path], Awaitable[None]]] = None,
         on_clipboard_received: Optional[Callable[[str], Awaitable[None]]] = None,
+        on_message_received: Optional[Callable[[str, str], Awaitable[None]]] = None,
     ):
         """
         Initialize the transfer server.
@@ -39,6 +40,7 @@ class TransferServer:
             on_transfer_progress: Callback for progress updates
             on_transfer_complete: Callback when transfer completes
             on_clipboard_received: Callback when clipboard data received
+            on_message_received: Callback(sender_hostname, text) when chat message received
         """
         self._port = port or config.network.tcp_port
         self._download_dir = download_dir or config.download_dir
@@ -46,6 +48,7 @@ class TransferServer:
         self._on_transfer_progress = on_transfer_progress
         self._on_transfer_complete = on_transfer_complete
         self._on_clipboard_received = on_clipboard_received
+        self._on_message_received = on_message_received
         
         self._server: Optional[asyncio.Server] = None
         self._running = False
@@ -95,6 +98,9 @@ class TransferServer:
             
             elif msg_type == MessageType.CLIPBOARD_PUSH:
                 await self._handle_clipboard(reader, writer, payload)
+            
+            elif msg_type == MessageType.MESSAGE_PUSH:
+                await self._handle_chat_message(reader, writer, payload)
             
             elif msg_type == MessageType.PING:
                 # Respond with pong
@@ -248,5 +254,24 @@ class TransferServer:
             
             if self._on_clipboard_received:
                 await self._on_clipboard_received(clipboard_text)
+        except Exception:
+            pass
+
+    async def _handle_chat_message(
+        self,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+        payload: bytes,
+    ) -> None:
+        """Handle an incoming chat message."""
+        from .protocol import ChatMessage
+        try:
+            msg = ChatMessage.unpack(payload)
+            if msg:
+                # Send ACK immediately
+                await send_message(writer, MessageType.MESSAGE_ACK, b"")
+                # Notify the app
+                if self._on_message_received:
+                    await self._on_message_received(msg.sender, msg.text)
         except Exception:
             pass
