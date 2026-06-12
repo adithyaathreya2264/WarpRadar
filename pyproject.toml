@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "warpradar"
+version = "0.2.0"
+description = "Decentralized P2P Terminal File Sharing with encrypted transfers"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "WarpRadar Team"},
+]
+keywords = ["file-sharing", "p2p", "lan", "tui", "terminal", "encryption"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: File Sharing",
+    "Topic :: Security :: Cryptography",
+]
+
+dependencies = [
+    "textual>=0.40.0",
+    "rich>=13.0",
+    "cryptography>=41.0",
+    "pyperclip>=1.8",
+    "watchdog>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+[project.scripts]
+warpradar = "warpradar.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["warpradar*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
