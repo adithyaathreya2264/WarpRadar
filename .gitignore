@@ -29,5 +29,8 @@ Thumbs.db
 # Downloads
 WarpDownloads/
 
+# Black Hole auto-send directory
+WarpBlackHole/
+
 # Logs
 *.log
