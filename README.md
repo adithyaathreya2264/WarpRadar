@@ -1,5 +1,7 @@
 # WarpRadar
 
+# STILL UNDER ACTIVE DEVELOPMENT
+
 **Decentralized Terminal File Sharing & LAN Messaging**
 
 WarpRadar is a retro-futuristic TUI for secure local network communication — share files, beam clipboards, and chat in real-time, all encrypted, zero configuration required.
