@@ -53,19 +53,19 @@ cd WarpRadar
 python -m venv .venv
 .\.venv\Scripts\activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install the application and dependencies
+pip install -e .
 ```
 
 ### Running WarpRadar
 
 ```bash
 # Terminal 1 (default port 5556)
-python -m warpradar
+warpradar
 
 # Terminal 2 (different port for same-machine testing)
 $env:WARPRADAR_TCP_PORT=5557
-python -m warpradar
+warpradar
 ```
 
 ### First-Time Usage
@@ -98,8 +98,8 @@ python -m warpradar
 ┌──────────────────────────────────────────────────┐
 │              Layer 1: Discovery                  │
 │  UDP Multicast (224.0.0.1:5555)                 │
-│  • Beacon: Broadcasts heartbeat every 2s        │
-│  • Listener: Discovers peers passively          │
+│  • Beacon: Broadcasts heartbeat (v2 + timestamp)│
+│  • Listener: Discovers peers & calculates RTT   │
 │  • Registry: Manages active peers (TTL=10s)     │
 └──────────────────────────────────────────────────┘
                       ↓
@@ -165,6 +165,11 @@ WarpRadar/
 │   ├── app.py              # Main application orchestrator
 │   ├── config.py           # Configuration
 │   └── __main__.py         # Entry point with CLI args
+├── tests/                  # Pytest test suite (55 tests)
+│   ├── test_crypto.py      # DH and AES testing
+│   ├── test_protocol.py    # Message serialization tests
+│   └── ...                 # Other test files
+├── pyproject.toml          # Build configuration
 ├── requirements.txt
 └── README.md
 ```
@@ -188,6 +193,20 @@ multicast_port  = 5555
 tcp_port        = 5556       # overridden by env var
 chunk_size      = 4096       # bytes per transfer chunk
 primary_color   = "#00ff41"  # neon green
+```
+
+---
+
+## Testing
+
+WarpRadar includes a comprehensive test suite (55+ tests) verifying the cryptographic implementations, protocol packing, and formatting logic.
+
+```bash
+# Install test dependencies
+pip install pytest pytest-asyncio
+
+# Run the test suite
+python -m pytest tests/ -v
 ```
 
 ---
