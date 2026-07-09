@@ -28,6 +28,7 @@ from .utils.system import get_system_info
 from .utils.clipboard import get_clipboard, set_clipboard
 from .utils.history import TransferHistory
 from .utils.blackhole import BlackHole
+from .utils.debug_log import set_tui_mode
 
 
 class WarpRadarApp(App):
@@ -43,6 +44,7 @@ class WarpRadarApp(App):
         Binding("c", "warp_clipboard", "Warp Clipboard", show=True),
         Binding("s", "toggle_stealth", "Stealth Mode", show=True),
         Binding("b", "toggle_blackhole", "Black Hole", show=True),
+        Binding("escape", "close_chat", "Close Chat", show=False),
         Binding("up", "select_prev", "Previous", show=False),
         Binding("k", "select_prev", "Previous", show=False),
         Binding("down", "select_next", "Next", show=False),
@@ -57,6 +59,9 @@ class WarpRadarApp(App):
     
     def __init__(self):
         super().__init__()
+        
+        # Suppress stdout in debug_log to avoid corrupting TUI
+        set_tui_mode(True)
         
         # Networking components
         self._peer_registry: Optional[PeerRegistry] = None
@@ -214,10 +219,6 @@ class WarpRadarApp(App):
         if not self._peer_registry:
             return
         
-        # Get peers (run in sync context)
-        async def get_peers():
-            return await self._peer_registry.get_all_peers()
-        
         # Schedule coroutine
         asyncio.create_task(self._async_update_peers())
     
@@ -255,7 +256,7 @@ class WarpRadarApp(App):
                     break
         
         # Create a Future to wait for user response
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         response_future: asyncio.Future[bool] = loop.create_future()
         
         def on_modal_dismiss(accepted: bool) -> None:
@@ -281,18 +282,22 @@ class WarpRadarApp(App):
         if self._progress:
             self._progress.update_progress(progress)
     
-    async def _handle_transfer_complete(self, file_path: Path) -> None:
+    async def _handle_transfer_complete(self, file_path: Path, peer_ip: str, peer_port: int) -> None:
         """Handle transfer completion."""
         self._show_toast(f"Received: {file_path.name}", "success")
         
-        # Log to history (using last progress info)
+        # Look up peer hostname from registry
+        peer_hostname = peer_ip
+        if self._peer_registry:
+            peers = await self._peer_registry.get_all_peers()
+            for peer in peers:
+                if peer.ip == peer_ip:
+                    peer_hostname = peer.hostname
+                    break
+        
+        # Log to history
         if self._progress and self._progress.progress:
             p = self._progress.progress
-            # Find peer info from last transfer
-            peer_hostname = "unknown"
-            peer_ip = "unknown"
-            # You could track this in a transfer state variable
-            
             self._history.add_transfer(
                 direction="received",
                 filename=p.filename,
@@ -473,16 +478,37 @@ class WarpRadarApp(App):
             self._show_toast("Failed to warp clipboard", "error")
     
     def action_send_message(self) -> None:
-        """Focus the chat input box so the user can type a message."""
+        """Show the chat panel and focus the input box."""
         if not self._selected_peer:
             self._show_toast("No peer selected", "warning")
             return
+        # Show chat panel
+        try:
+            chat_panel = self.query_one("#chat-panel")
+            chat_panel.display = True
+        except Exception:
+            pass
         if self._chat:
             try:
                 input_box = self._chat.query_one("#chat-input")
                 input_box.focus()
             except Exception:
                 pass
+
+    def action_close_chat(self) -> None:
+        """Hide the chat panel and return focus to the main app."""
+        try:
+            chat_panel = self.query_one("#chat-panel")
+            chat_panel.display = False
+        except Exception:
+            pass
+        # Move focus back out of the chat input
+        self.set_focus(None)
+        self._show_toast("Chat closed (press M to reopen)", "info")
+
+    def on_chat_widget_message_send(self, message: ChatWidget.MessageSend) -> None:
+        """Handle chat submission from the ChatWidget input."""
+        self._send_message_worker(message.text)
 
     @work
     async def _send_message_worker(self, text: str) -> None:
@@ -507,6 +533,12 @@ class WarpRadarApp(App):
 
     async def _handle_message_received(self, sender: str, text: str) -> None:
         """Handle an incoming chat message from another peer."""
+        # Auto-show the chat panel so the user can see the message
+        try:
+            chat_panel = self.query_one("#chat-panel")
+            chat_panel.display = True
+        except Exception:
+            pass
         # Display in chat log
         if self._chat:
             self._chat.add_message(sender, text, is_self=False)
@@ -586,11 +618,14 @@ class WarpRadarApp(App):
                 self._show_toast("Stealth mode disabled - you are visible", "info")
     
     def watch_stealth_mode(self, value: bool) -> None:
-        """React to stealth mode changes."""
-        # Update status display
-        pass
+        """React to stealth mode changes — show indicator in app subtitle."""
+        if value:
+            self.sub_title = "[STEALTH]"
+        else:
+            self.sub_title = ""
     
     def watch_peer_count(self, value: int) -> None:
         """React to peer count changes."""
-        # Could update a status widget
-        pass
+        # Update title to reflect peer count
+        stealth = " [STEALTH]" if self.stealth_mode else ""
+        self.title = f"WarpRadar - {self._system_info.hostname} ({value} peers){stealth}"
