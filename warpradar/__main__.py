@@ -4,7 +4,6 @@ import sys
 import os
 import argparse
 import traceback
-from warpradar.app import WarpRadarApp
 
 
 def main():
@@ -27,16 +26,15 @@ def main():
     
     args = parser.parse_args()
     
-    # Set environment variables if ports specified
+    # Set environment variables BEFORE importing any warpradar modules.
+    # The config module reads env vars at import time via os.getenv() defaults.
     if args.tcp_port:
         os.environ["WARPRADAR_TCP_PORT"] = str(args.tcp_port)
     if args.udp_port:
         os.environ["WARPRADAR_MULTICAST_PORT"] = str(args.udp_port)
     
-    # Reload config with new ports
-    from warpradar import config as cfg_module
-    import importlib
-    importlib.reload(cfg_module)
+    # Now import after env vars are set
+    from warpradar.app import WarpRadarApp
     
     try:
         app = WarpRadarApp()
@@ -54,4 +52,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
