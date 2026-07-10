@@ -102,7 +102,7 @@ class Listener:
     
     async def _listen_loop(self) -> None:
         """Main listening loop."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         
         while self._running:
             try:
@@ -157,13 +157,17 @@ class Listener:
         msg_type = parsed["msg_type"]
         
         if msg_type == MSG_TYPE_HEARTBEAT:
+            # Compute RTT from send timestamp
+            send_ts = parsed.get("timestamp", 0.0)
+            rtt_ms = max(0.0, (receive_time - send_ts) * 1000.0) if send_ts > 0 else 0.0
+            
             # Update or add peer
             await self._registry.update_peer(
                 hostname=parsed["hostname"],
                 ip=sender_ip,
                 port=parsed["port"],
                 os=parsed["os"],
-                rtt_ms=0.0,  # Could calculate RTT if we had send timestamp
+                rtt_ms=rtt_ms,
             )
         elif msg_type == MSG_TYPE_GOODBYE:
             # Remove peer
