@@ -83,7 +83,7 @@ def derive_session_key(shared_secret: bytes, salt: bytes = None) -> bytes:
         32-byte AES key
     """
     if salt is None:
-        salt = b"WarpRadar-v1"
+        salt = os.urandom(16)
     
     hkdf = HKDF(
         algorithm=hashes.SHA256(),
