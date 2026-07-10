@@ -10,15 +10,15 @@ from ..config import config
 from ..utils.system import get_system_info, OperatingSystem
 
 
-# Packet format:
-# | Magic (4B) | Version (1B) | MsgType (1B) | OS (1B) | Port (2B) | Hostname (32B) |
-# Total: 41 bytes
+# Packet format (v2):
+# | Magic (4B) | Version (1B) | MsgType (1B) | OS (1B) | Port (2B) | Timestamp (8B) | Hostname (32B) |
+# Total: 49 bytes
 MAGIC = b"WARP"
-PROTOCOL_VERSION = 1
+PROTOCOL_VERSION = 2
 MSG_TYPE_HEARTBEAT = 0x01
 MSG_TYPE_GOODBYE = 0x02
 HOSTNAME_MAX_LEN = 32
-PACKET_FORMAT = "!4sBBBH32s"  # Network byte order (big-endian)
+PACKET_FORMAT = "!4sBBBHd32s"  # Network byte order (big-endian), d = double (8B)
 PACKET_SIZE = struct.calcsize(PACKET_FORMAT)
 
 
@@ -60,6 +60,7 @@ def create_heartbeat_packet(
         MSG_TYPE_HEARTBEAT,
         _os_to_byte(os),
         tcp_port,
+        time.time(),
         hostname_padded,
     )
 
@@ -80,6 +81,7 @@ def create_goodbye_packet(
         MSG_TYPE_GOODBYE,
         _os_to_byte(os),
         tcp_port,
+        time.time(),
         hostname_padded,
     )
 
@@ -89,13 +91,13 @@ def parse_packet(data: bytes) -> Optional[dict]:
     Parse a received packet.
     
     Returns:
-        Dictionary with hostname, os, port, msg_type or None if invalid
+        Dictionary with hostname, os, port, msg_type, timestamp or None if invalid
     """
     if len(data) < PACKET_SIZE:
         return None
     
     try:
-        magic, version, msg_type, os_byte, port, hostname_bytes = struct.unpack(
+        magic, version, msg_type, os_byte, port, timestamp, hostname_bytes = struct.unpack(
             PACKET_FORMAT, data[:PACKET_SIZE]
         )
         
@@ -113,6 +115,7 @@ def parse_packet(data: bytes) -> Optional[dict]:
             "os": _byte_to_os(os_byte),
             "port": port,
             "msg_type": msg_type,
+            "timestamp": timestamp,
         }
     except (struct.error, UnicodeDecodeError):
         return None
@@ -249,7 +252,7 @@ class Beacon:
         
         try:
             # Run blocking socket operation in executor
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             await loop.run_in_executor(
                 None,
                 self._socket.sendto,
