@@ -1,12 +1,12 @@
-"""TCP Server - Listens for incoming file transfer and clipboard requests."""
+"""TCP Server - Listens for incoming file transfer, clipboard, and chat requests."""
 
 import asyncio
 from typing import Callable, Optional, Awaitable
 from pathlib import Path
 
-from .protocol import MessageType, ClipboardPush
+from .protocol import MessageType, ChatMessage
 from .handshake import (
-    TransferSession, handle_incoming_transfer,
+    TransferSession,
     send_message, receive_message,
 )
 from .streamer import stream_file_receive, TransferProgress
@@ -15,10 +15,11 @@ from ..security.crypto import (
     public_key_to_bytes, bytes_to_public_key, SessionCrypto,
 )
 from ..config import config
+from ..utils.debug_log import debug_log
 
 
 class TransferServer:
-    """TCP server for receiving file transfers and clipboard data."""
+    """TCP server for receiving file transfers, clipboard data, and chat messages."""
     
     def __init__(
         self,
@@ -26,7 +27,7 @@ class TransferServer:
         download_dir: Path = None,
         on_transfer_request: Optional[Callable[[str, int, str], Awaitable[bool]]] = None,
         on_transfer_progress: Optional[Callable[[TransferProgress], Awaitable[None]]] = None,
-        on_transfer_complete: Optional[Callable[[Path], Awaitable[None]]] = None,
+        on_transfer_complete: Optional[Callable[[Path, str, int], Awaitable[None]]] = None,
         on_clipboard_received: Optional[Callable[[str], Awaitable[None]]] = None,
         on_message_received: Optional[Callable[[str, str], Awaitable[None]]] = None,
     ):
@@ -38,7 +39,7 @@ class TransferServer:
             download_dir: Directory to save received files
             on_transfer_request: Callback(filename, size, peer_ip) -> accept?
             on_transfer_progress: Callback for progress updates
-            on_transfer_complete: Callback when transfer completes
+            on_transfer_complete: Callback(saved_path, peer_ip, peer_port) when transfer completes
             on_clipboard_received: Callback when clipboard data received
             on_message_received: Callback(sender_hostname, text) when chat message received
         """
@@ -88,12 +89,13 @@ class TransferServer:
         writer: asyncio.StreamWriter,
     ) -> None:
         """Handle an incoming connection."""
+        msg_type = None
         try:
             # Peek at the first message to determine type
             msg_type, payload = await receive_message(reader, timeout=30.0)
             
             if msg_type == MessageType.HANDSHAKE_REQ:
-                # File transfer request - need to reprocess with handshake
+                # File transfer request
                 await self._handle_file_transfer(reader, writer, msg_type, payload)
             
             elif msg_type == MessageType.CLIPBOARD_PUSH:
@@ -107,9 +109,7 @@ class TransferServer:
                 await send_message(writer, MessageType.PONG, b"")
             
         except Exception as e:
-            print(f"[SERVER ERROR] {type(e).__name__}: {e}")
-            import traceback
-            traceback.print_exc()
+            debug_log(f"[SERVER ERROR] {type(e).__name__}: {e}")
         finally:
             # Only close if not a file transfer (file transfer manages its own cleanup)
             if msg_type != MessageType.HANDSHAKE_REQ:
@@ -128,7 +128,6 @@ class TransferServer:
     ) -> None:
         """Handle incoming file transfer."""
         from .protocol import HandshakeRequest, HandshakeAck, HandshakeNak
-        from ..utils.debug_log import debug_log
         
         debug_log(f"[SERVER] Handling file transfer request...")
         
@@ -142,6 +141,7 @@ class TransferServer:
         
         peer_addr = writer.get_extra_info("peername")
         peer_ip = peer_addr[0] if peer_addr else "unknown"
+        peer_port = peer_addr[1] if peer_addr else 0
         
         # Default accept callback
         async def default_accept(filename: str, size: int, ip: str) -> bool:
@@ -156,8 +156,6 @@ class TransferServer:
             debug_log(f"[SERVER] Accept callback returned: {accepted}")
         except Exception as e:
             debug_log(f"[SERVER] Accept callback EXCEPTION: {type(e).__name__}: {e}")
-            import traceback
-            traceback.print_exc()
             accepted = False
         
         if not accepted:
@@ -173,15 +171,16 @@ class TransferServer:
         ack = HandshakeAck(public_key=public_key_to_bytes(keypair.public_key))
         await send_message(writer, MessageType.HANDSHAKE_ACK, ack.pack())
         
-        # Compute shared secret and session key
+        # Compute shared secret and session key (using salt from request)
         their_public_key = bytes_to_public_key(request.public_key)
         shared_secret = compute_shared_secret(keypair.private_key, their_public_key)
-        session_key = derive_session_key(shared_secret)
+        salt = request.salt if request.salt else None
+        session_key = derive_session_key(shared_secret, salt)
         
         # Create session
         session = TransferSession(
             peer_ip=peer_ip,
-            peer_port=peer_addr[1] if peer_addr else 0,
+            peer_port=peer_port,
             filename=request.filename,
             filesize=request.filesize,
             checksum=request.checksum,
@@ -193,7 +192,7 @@ class TransferServer:
         
         # Receive the file
         try:
-            print(f"[SERVER] Starting file receive: {request.filename}")
+            debug_log(f"[SERVER] Starting file receive: {request.filename}")
             saved_path = await stream_file_receive(
                 session=session,
                 output_dir=self._download_dir,
@@ -201,15 +200,13 @@ class TransferServer:
             )
             
             if saved_path:
-                print(f"[SERVER] File saved to: {saved_path}")
+                debug_log(f"[SERVER] File saved to: {saved_path}")
                 if self._on_transfer_complete:
-                    await self._on_transfer_complete(saved_path)
+                    await self._on_transfer_complete(saved_path, peer_ip, peer_port)
             else:
-                print(f"[SERVER] File receive failed!")
+                debug_log(f"[SERVER] File receive failed!")
         except Exception as e:
-            print(f"[SERVER TRANSFER ERROR] {type(e).__name__}: {e}")
-            import traceback
-            traceback.print_exc()
+            debug_log(f"[SERVER TRANSFER ERROR] {type(e).__name__}: {e}")
         finally:
             # Close connection after transfer
             try:
@@ -224,38 +221,53 @@ class TransferServer:
         writer: asyncio.StreamWriter,
         payload: bytes,
     ) -> None:
-        """Handle incoming clipboard push."""
-        # For clipboard, we need a simpler key exchange
-        # The payload contains DH public key + encrypted content
-        if len(payload) < 256:
+        """
+        Handle incoming clipboard push with proper DH key exchange.
+        
+        Protocol:
+            1. Receive CLIPBOARD_PUSH with client's DH public key + salt (payload)
+            2. Send CLIPBOARD_ACK with our DH public key
+            3. Both sides derive shared session key using the client's salt
+            4. Receive CLIPBOARD_DATA with encrypted content, decrypt it
+        """
+        if len(payload) < 272:  # 256 DH key + 16 salt
+            debug_log("[SERVER] Clipboard push payload too short for DH key + salt")
             return
         
         their_public_key_bytes = payload[:256]
-        encrypted_content = payload[256:]
+        salt = payload[256:272]
         
-        # Generate our keypair and compute shared secret
+        # Step 1: Generate our keypair
         keypair = generate_keypair()
         their_public_key = bytes_to_public_key(their_public_key_bytes)
-        shared_secret = compute_shared_secret(keypair.private_key, their_public_key)
-        session_key = derive_session_key(shared_secret)
         
-        # Send our public key as ACK
+        # Step 2: Send our public key as ACK
         await send_message(
             writer,
             MessageType.CLIPBOARD_ACK,
             public_key_to_bytes(keypair.public_key),
         )
         
-        # Decrypt the clipboard content
+        # Step 3: Derive shared session key using client's salt
+        shared_secret = compute_shared_secret(keypair.private_key, their_public_key)
+        session_key = derive_session_key(shared_secret, salt)
         crypto = SessionCrypto(session_key)
+        
+        # Step 4: Receive the encrypted clipboard data
+        msg_type, encrypted_payload = await receive_message(reader, timeout=10.0)
+        if msg_type != MessageType.CLIPBOARD_DATA or not encrypted_payload:
+            debug_log("[SERVER] Expected CLIPBOARD_DATA but got something else")
+            return
+        
+        # Decrypt the clipboard content
         try:
-            decrypted = crypto.decrypt(encrypted_content)
+            decrypted = crypto.decrypt(encrypted_payload)
             clipboard_text = decrypted.decode("utf-8")
             
             if self._on_clipboard_received:
                 await self._on_clipboard_received(clipboard_text)
-        except Exception:
-            pass
+        except Exception as e:
+            debug_log(f"[SERVER] Clipboard decryption failed: {type(e).__name__}: {e}")
 
     async def _handle_chat_message(
         self,
@@ -263,15 +275,50 @@ class TransferServer:
         writer: asyncio.StreamWriter,
         payload: bytes,
     ) -> None:
-        """Handle an incoming chat message."""
-        from .protocol import ChatMessage
+        """
+        Handle an incoming encrypted chat message with DH key exchange.
+        
+        Protocol:
+            1. Receive MESSAGE_PUSH with client's DH public key + salt (payload)
+            2. Send MESSAGE_ACK with our DH public key
+            3. Both sides derive shared session key using the client's salt
+            4. Receive MESSAGE_DATA with encrypted ChatMessage, decrypt it
+        """
+        if len(payload) < 272:  # 256 DH key + 16 salt
+            debug_log("[SERVER] Chat push payload too short for DH key + salt")
+            return
+        
+        their_public_key_bytes = payload[:256]
+        salt = payload[256:272]
+        
+        # Step 1: Generate our keypair
+        keypair = generate_keypair()
+        their_public_key = bytes_to_public_key(their_public_key_bytes)
+        
+        # Step 2: Send our public key as ACK
+        await send_message(
+            writer,
+            MessageType.MESSAGE_ACK,
+            public_key_to_bytes(keypair.public_key),
+        )
+        
+        # Step 3: Derive shared session key using client's salt
+        shared_secret = compute_shared_secret(keypair.private_key, their_public_key)
+        session_key = derive_session_key(shared_secret, salt)
+        crypto = SessionCrypto(session_key)
+        
+        # Step 4: Receive encrypted message data
+        msg_type, encrypted_payload = await receive_message(reader, timeout=10.0)
+        if msg_type != MessageType.MESSAGE_DATA or not encrypted_payload:
+            debug_log("[SERVER] Expected MESSAGE_DATA but got something else")
+            return
+        
         try:
-            msg = ChatMessage.unpack(payload)
+            decrypted = crypto.decrypt(encrypted_payload)
+            msg = ChatMessage.unpack(decrypted)
             if msg:
-                # Send ACK immediately
-                await send_message(writer, MessageType.MESSAGE_ACK, b"")
                 # Notify the app
                 if self._on_message_received:
                     await self._on_message_received(msg.sender, msg.text)
-        except Exception:
-            pass
+        except Exception as e:
+            debug_log(f"[SERVER] Chat decryption failed: {type(e).__name__}: {e}")
