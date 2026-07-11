@@ -1,6 +1,7 @@
 """TCP Handshake - Connection establishment with encryption setup."""
 
 import asyncio
+import os
 from typing import Optional, Tuple, Callable, Awaitable
 from dataclasses import dataclass
 
@@ -100,6 +101,9 @@ async def initiate_file_transfer(
         # Generate our DH keypair
         keypair = generate_keypair()
         
+        # Generate random salt for HKDF key derivation
+        salt = os.urandom(16)
+        
         # Compute file checksum
         checksum = compute_checksum(file_path)
         debug_log(f"[HANDSHAKE] Checksum computed, sending request...")
@@ -110,6 +114,7 @@ async def initiate_file_transfer(
             filesize=file_path.stat().st_size,
             checksum=checksum,
             public_key=public_key_to_bytes(keypair.public_key),
+            salt=salt,
         )
         
         # Send handshake request
@@ -130,10 +135,10 @@ async def initiate_file_transfer(
                 await writer.wait_closed()
                 return None
             
-            # Compute shared secret and session key
+            # Compute shared secret and session key (using our salt)
             their_public_key = bytes_to_public_key(ack.public_key)
             shared_secret = compute_shared_secret(keypair.private_key, their_public_key)
-            session_key = derive_session_key(shared_secret)
+            session_key = derive_session_key(shared_secret, salt)
             debug_log(f"[HANDSHAKE] Session key derived, transfer ready!")
             
             return TransferSession(
@@ -164,76 +169,4 @@ async def initiate_file_transfer(
             
     except Exception as e:
         debug_log(f"[HANDSHAKE ERROR] {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-
-async def handle_incoming_transfer(
-    reader: asyncio.StreamReader,
-    writer: asyncio.StreamWriter,
-    accept_callback: Callable[[str, int, str], Awaitable[bool]],
-) -> Optional[TransferSession]:
-    """
-    Handle an incoming file transfer request.
-    
-    Args:
-        reader: Stream reader
-        writer: Stream writer
-        accept_callback: Async function(filename, filesize, hostname) -> bool
-    
-    Returns:
-        TransferSession if accepted, None otherwise
-    """
-    try:
-        # Receive handshake request
-        msg_type, payload = await receive_message(reader)
-        
-        if msg_type != MessageType.HANDSHAKE_REQ:
-            return None
-        
-        request = HandshakeRequest.unpack(payload)
-        if not request:
-            return None
-        
-        # Get peer info
-        peer_addr = writer.get_extra_info("peername")
-        peer_ip = peer_addr[0] if peer_addr else "unknown"
-        
-        # Ask for user acceptance
-        accepted = await accept_callback(request.filename, request.filesize, peer_ip)
-        
-        if not accepted:
-            # Send rejection
-            nak = HandshakeNak(reason="User rejected transfer")
-            await send_message(writer, MessageType.HANDSHAKE_NAK, nak.pack())
-            writer.close()
-            await writer.wait_closed()
-            return None
-        
-        # Generate our DH keypair
-        keypair = generate_keypair()
-        
-        # Send ACK with our public key
-        ack = HandshakeAck(public_key=public_key_to_bytes(keypair.public_key))
-        await send_message(writer, MessageType.HANDSHAKE_ACK, ack.pack())
-        
-        # Compute shared secret and session key
-        their_public_key = bytes_to_public_key(request.public_key)
-        shared_secret = compute_shared_secret(keypair.private_key, their_public_key)
-        session_key = derive_session_key(shared_secret)
-        
-        return TransferSession(
-            peer_ip=peer_ip,
-            peer_port=peer_addr[1] if peer_addr else 0,
-            filename=request.filename,
-            filesize=request.filesize,
-            checksum=request.checksum,
-            crypto=SessionCrypto(session_key),
-            reader=reader,
-            writer=writer,
-            is_sender=False,
-        )
-        
-    except Exception:
         return None
