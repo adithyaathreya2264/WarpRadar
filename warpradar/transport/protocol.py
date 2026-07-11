@@ -20,16 +20,18 @@ class MessageType(IntEnum):
     DATA_CANCEL = 0x12    # Cancel transfer
     
     # Clipboard messages
-    CLIPBOARD_PUSH = 0x20  # Push clipboard content
-    CLIPBOARD_ACK = 0x21   # Clipboard received
+    CLIPBOARD_PUSH = 0x20  # Push clipboard DH public key
+    CLIPBOARD_ACK = 0x21   # Clipboard DH public key response
+    CLIPBOARD_DATA = 0x22  # Encrypted clipboard content
     
     # Utility messages
     PING = 0x30           # Ping peer
     PONG = 0x31           # Pong response
     
     # Chat messages
-    MESSAGE_PUSH = 0x40   # Send a chat message
-    MESSAGE_ACK  = 0x41   # Chat message received
+    MESSAGE_PUSH = 0x40   # Chat DH public key
+    MESSAGE_ACK  = 0x41   # Chat DH public key response
+    MESSAGE_DATA = 0x42   # Encrypted chat message
 
 
 # Header format: | Magic (4B) | Version (1B) | MsgType (1B) | Length (4B) |
@@ -88,19 +90,22 @@ class HandshakeRequest:
     filesize: int
     checksum: str  # SHA-256 hex
     public_key: bytes  # DH public key (256 bytes)
+    salt: bytes = b""  # Random 16-byte HKDF salt
     
     def pack(self) -> bytes:
         """Pack into payload bytes."""
         filename_bytes = self.filename.encode("utf-8")[:255]
         checksum_bytes = self.checksum.encode("ascii")[:64]
+        salt = self.salt.ljust(16, b"\x00")[:16]
         
-        # Format: filename_len (1B) + filename + filesize (8B) + checksum (64B) + pubkey (256B)
+        # Format: filename_len (1B) + filename + filesize (8B) + checksum (64B) + salt (16B) + pubkey (256B)
         return struct.pack(
-            f"!B{len(filename_bytes)}sQ64s256s",
+            f"!B{len(filename_bytes)}sQ64s16s256s",
             len(filename_bytes),
             filename_bytes,
             self.filesize,
             checksum_bytes.ljust(64, b"\x00"),
+            salt,
             self.public_key,
         )
     
@@ -120,6 +125,9 @@ class HandshakeRequest:
             checksum = data[offset:offset + 64].rstrip(b"\x00").decode("ascii")
             offset += 64
             
+            salt = data[offset:offset + 16]
+            offset += 16
+            
             public_key = data[offset:offset + 256]
             
             return cls(
@@ -127,6 +135,7 @@ class HandshakeRequest:
                 filesize=filesize,
                 checksum=checksum,
                 public_key=public_key,
+                salt=salt,
             )
         except (struct.error, UnicodeDecodeError, IndexError):
             return None
