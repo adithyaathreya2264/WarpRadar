@@ -1,10 +1,11 @@
-"""TCP Client - Initiates file transfers and clipboard pushes."""
+"""TCP Client - Initiates file transfers, clipboard pushes, and chat messages."""
 
 import asyncio
+import os
 from pathlib import Path
 from typing import Callable, Optional, Awaitable
 
-from .protocol import MessageType, ClipboardPush
+from .protocol import MessageType, ChatMessage
 from .handshake import (
     TransferSession, initiate_file_transfer,
     send_message, receive_message,
@@ -58,8 +59,6 @@ async def send_file(
         return success
     except Exception as e:
         debug_log(f"[CLIENT ERROR] Stream failed: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
         return False
     finally:
         # Close connection
@@ -76,7 +75,13 @@ async def push_clipboard(
     text: str,
 ) -> bool:
     """
-    Push clipboard content to a peer.
+    Push clipboard content to a peer with proper DH key exchange.
+    
+    Protocol:
+        1. Client sends CLIPBOARD_PUSH with DH public key (256 bytes)
+        2. Server responds with CLIPBOARD_ACK containing its DH public key
+        3. Both sides derive shared session key
+        4. Client sends CLIPBOARD_DATA with AES-256-GCM encrypted text
     
     Args:
         peer_ip: Peer's IP address
@@ -93,50 +98,46 @@ async def push_clipboard(
             timeout=10.0,
         )
         
-        # Generate our DH keypair
+        # Step 1: Generate our DH keypair + random salt, send both
         keypair = generate_keypair()
-        
-        # We'll send our public key, then wait for their ACK with their public key
-        # Then compute shared secret and send encrypted content
-        
-        # For simplicity, compute a temporary session key with a placeholder
-        # The real exchange happens when we get the ACK
-        
-        # Encode the text
-        text_bytes = text.encode("utf-8")
-        
-        # Create temporary encryption (we'll use a simple approach)
-        # Send public key + unencrypted length first, then encrypted after key exchange
-        
-        # Build payload: our public key + text (will be encrypted after key exchange)
-        payload = public_key_to_bytes(keypair.public_key) + text_bytes
-        
-        # Actually, let's do a proper exchange:
-        # 1. Send PING with our public key
-        # 2. Receive PONG with their public key
-        # 3. Compute shared key
-        # 4. Send encrypted clipboard
-        
-        # Simplified: encrypt with our own keypair temporarily for demo
-        # In production, do full key exchange
-        
+        salt = os.urandom(16)
         await send_message(
             writer,
             MessageType.CLIPBOARD_PUSH,
-            payload,
+            public_key_to_bytes(keypair.public_key) + salt,
         )
         
-        # Wait for ACK
+        # Step 2: Wait for server's public key in ACK
         msg_type, response = await receive_message(reader, timeout=10.0)
+        if msg_type != MessageType.CLIPBOARD_ACK or not response or len(response) < 256:
+            debug_log("[CLIENT] Clipboard DH exchange failed - bad ACK")
+            writer.close()
+            await writer.wait_closed()
+            return False
         
-        success = msg_type == MessageType.CLIPBOARD_ACK
+        their_public_key = bytes_to_public_key(response[:256])
+        
+        # Step 3: Derive shared session key using the same salt
+        shared_secret = compute_shared_secret(keypair.private_key, their_public_key)
+        session_key = derive_session_key(shared_secret, salt)
+        crypto = SessionCrypto(session_key)
+        
+        # Step 4: Encrypt and send clipboard content
+        text_bytes = text.encode("utf-8")
+        encrypted = crypto.encrypt(text_bytes)
+        
+        await send_message(
+            writer,
+            MessageType.CLIPBOARD_DATA,
+            encrypted,
+        )
         
         writer.close()
         await writer.wait_closed()
+        return True
         
-        return success
-        
-    except Exception:
+    except Exception as e:
+        debug_log(f"[CLIENT] Clipboard push failed: {type(e).__name__}: {e}")
         return False
 
 
@@ -147,8 +148,14 @@ async def send_chat_message(
     text: str,
 ) -> bool:
     """
-    Send a chat message to a peer.
-
+    Send an encrypted chat message to a peer with DH key exchange.
+    
+    Protocol:
+        1. Client sends MESSAGE_PUSH with DH public key (256 bytes)
+        2. Server responds with MESSAGE_ACK containing its DH public key
+        3. Both sides derive shared session key
+        4. Client sends MESSAGE_DATA with AES-256-GCM encrypted ChatMessage
+    
     Args:
         peer_ip: Peer's IP address
         peer_port: Peer's TCP port
@@ -158,21 +165,45 @@ async def send_chat_message(
     Returns:
         True if message delivered successfully
     """
-    from .protocol import ChatMessage
     try:
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection(peer_ip, peer_port),
             timeout=10.0,
         )
+        
+        # Step 1: Generate DH keypair + random salt, send both
+        keypair = generate_keypair()
+        salt = os.urandom(16)
+        await send_message(
+            writer,
+            MessageType.MESSAGE_PUSH,
+            public_key_to_bytes(keypair.public_key) + salt,
+        )
+        
+        # Step 2: Wait for server's DH public key in ACK
+        msg_type, response = await receive_message(reader, timeout=10.0)
+        if msg_type != MessageType.MESSAGE_ACK or not response or len(response) < 256:
+            debug_log("[CLIENT] Chat DH exchange failed - bad ACK")
+            writer.close()
+            await writer.wait_closed()
+            return False
+        
+        their_public_key = bytes_to_public_key(response[:256])
+        
+        # Step 3: Derive shared session key using the same salt
+        shared_secret = compute_shared_secret(keypair.private_key, their_public_key)
+        session_key = derive_session_key(shared_secret, salt)
+        crypto = SessionCrypto(session_key)
+        
+        # Step 4: Encrypt the ChatMessage and send
         msg = ChatMessage(sender=sender_hostname, text=text)
-        await send_message(writer, MessageType.MESSAGE_PUSH, msg.pack())
-
-        # Wait for ACK
-        msg_type, _ = await receive_message(reader, timeout=10.0)
-        success = msg_type == MessageType.MESSAGE_ACK
+        encrypted = crypto.encrypt(msg.pack())
+        
+        await send_message(writer, MessageType.MESSAGE_DATA, encrypted)
 
         writer.close()
         await writer.wait_closed()
-        return success
-    except Exception:
+        return True
+    except Exception as e:
+        debug_log(f"[CLIENT] Chat message failed: {type(e).__name__}: {e}")
         return False
