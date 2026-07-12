@@ -13,15 +13,7 @@ from rich.panel import Panel
 from rich.console import RenderableType
 
 from ..config import config
-
-
-def format_size(bytes_count: int) -> str:
-    """Format bytes as human-readable."""
-    for unit in ["B", "KB", "MB", "GB"]:
-        if bytes_count < 1024:
-            return f"{bytes_count:.1f} {unit}"
-        bytes_count /= 1024
-    return f"{bytes_count:.1f} TB"
+from ..utils.format import format_bytes as format_size
 
 
 class TransferRequestModal(ModalScreen):
@@ -56,7 +48,19 @@ class TransferRequestModal(ModalScreen):
         margin-top: 1;
     }
     
-    Button {
+    .btn-accept {
+        background: #005f00;
+        color: #00ff41;
+        text-style: bold;
+        min-width: 16;
+        margin: 0 2;
+    }
+
+    .btn-reject {
+        background: #5f0000;
+        color: #ff5f00;
+        text-style: bold;
+        min-width: 16;
         margin: 0 2;
     }
     """
@@ -86,8 +90,8 @@ class TransferRequestModal(ModalScreen):
                 id="info",
             )
             with Horizontal(id="buttons"):
-                yield Button("[Y] Accept", variant="success", id="accept")
-                yield Button("[N] Reject", variant="error", id="reject")
+                yield Button("[Y] Accept", classes="btn-accept", id="accept")
+                yield Button("[N] Reject", classes="btn-reject", id="reject")
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button press."""
