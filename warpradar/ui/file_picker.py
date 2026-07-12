@@ -56,7 +56,19 @@ class FilePickerModal(ModalScreen):
         margin-top: 1;
     }
     
-    Button {
+    .btn-send {
+        background: #005f00;
+        color: #00ff41;
+        text-style: bold;
+        min-width: 16;
+        margin: 0 2;
+    }
+
+    .btn-cancel {
+        background: #5f0000;
+        color: #ff5f00;
+        text-style: bold;
+        min-width: 16;
         margin: 0 2;
     }
     """
@@ -81,8 +93,8 @@ class FilePickerModal(ModalScreen):
             yield Static("Selected: None", id="selected-file")
             
             with Horizontal(id="buttons"):
-                yield Button("Send", variant="success", id="send")
-                yield Button("Cancel", variant="error", id="cancel")
+                yield Button("Send", classes="btn-send", id="send")
+                yield Button("Cancel", classes="btn-cancel", id="cancel")
     
     def on_directory_tree_file_selected(
         self, event: DirectoryTree.FileSelected
@@ -120,102 +132,6 @@ class FilePickerModal(ModalScreen):
         return f"{size:.1f} TB"
 
 
-class SimpleFilePickerModal(ModalScreen):
-    """Simplified file picker using text input (fallback)."""
-    
-    CSS = """
-    SimpleFilePickerModal {
-        align: center middle;
-    }
-    
-    #simple-dialog {
-        width: 60;
-        height: 12;
-        border: thick $primary;
-        background: $surface;
-        padding: 1 2;
-    }
-    
-    #title {
-        text-align: center;
-        text-style: bold;
-        color: $primary;
-        margin-bottom: 1;
-    }
-    
-    #instructions {
-        color: $primary;
-        margin-bottom: 1;
-    }
-    
-    Input {
-        margin-bottom: 1;
-    }
-    
-    #buttons {
-        align: center middle;
-        margin-top: 1;
-    }
-    
-    Button {
-        margin: 0 2;
-    }
-    """
-    
-    def __init__(self) -> None:
-        super().__init__()
-        self._input: Optional[Input] = None
-    
-    def compose(self) -> ComposeResult:
-        """Compose the simple file picker."""
-        with Container(id="simple-dialog"):
-            yield Static("📁 ENTER FILE PATH", id="title")
-            yield Static(
-                "Enter the full path to the file you want to send:",
-                id="instructions",
-            )
-            
-            self._input = Input(placeholder="e.g., C:\\Users\\Documents\\file.pdf")
-            yield self._input
-            
-            with Horizontal(id="buttons"):
-                yield Button("Send", variant="success", id="send")
-                yield Button("Cancel", variant="error", id="cancel")
-    
-    def on_mount(self) -> None:
-        """Focus input on mount."""
-        if self._input:
-            self._input.focus()
-    
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle button press."""
-        if event.button.id == "send":
-            if self._input and self._input.value:
-                file_path = Path(self._input.value)
-                if file_path.is_file():
-                    self.dismiss(file_path)
-                else:
-                    # Show error
-                    self._input.value = ""
-                    self._input.placeholder = "⚠ File not found - try again"
-            else:
-                self._input.placeholder = "⚠ Please enter a file path"
-        else:
-            self.dismiss(None)
-    
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        """Handle Enter key in input."""
-        if event.value:
-            file_path = Path(event.value)
-            if file_path.is_file():
-                self.dismiss(file_path)
-            else:
-                self._input.value = ""
-                self._input.placeholder = "⚠ File not found - try again"
-    
-    def key_escape(self) -> None:
-        """Cancel with Escape."""
-        self.dismiss(None)
 
 
 class QuickFilePickerModal(ModalScreen):
@@ -259,7 +175,11 @@ class QuickFilePickerModal(ModalScreen):
         margin-top: 1;
     }
     
-    Button {
+    .btn-cancel {
+        background: #5f0000;
+        color: #ff5f00;
+        text-style: bold;
+        min-width: 16;
         margin: 0 2;
     }
     """
@@ -287,7 +207,7 @@ class QuickFilePickerModal(ModalScreen):
             yield self._input
             
             with Horizontal(id="buttons"):
-                yield Button("Cancel", variant="error", id="cancel")
+                yield Button("Cancel", classes="btn-cancel", id="cancel")
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button press."""
