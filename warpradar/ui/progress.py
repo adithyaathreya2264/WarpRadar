@@ -9,29 +9,7 @@ from rich.console import RenderableType
 
 from ..transport.streamer import TransferProgress
 from ..config import config
-
-
-def format_bytes(bytes_count: float) -> str:
-    """Format bytes as human-readable string."""
-    for unit in ["B", "KB", "MB", "GB"]:
-        if bytes_count < 1024:
-            return f"{bytes_count:.1f} {unit}"
-        bytes_count /= 1024
-    return f"{bytes_count:.1f} TB"
-
-
-def format_time(seconds: float) -> str:
-    """Format seconds as human-readable time."""
-    if seconds < 60:
-        return f"{seconds:.0f}s"
-    elif seconds < 3600:
-        mins = seconds // 60
-        secs = seconds % 60
-        return f"{mins:.0f}m {secs:.0f}s"
-    else:
-        hours = seconds // 3600
-        mins = (seconds % 3600) // 60
-        return f"{hours:.0f}h {mins:.0f}m"
+from ..utils.format import format_bytes, format_duration as format_time
 
 
 class ProgressWidget(Widget):
