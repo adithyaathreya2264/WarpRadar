@@ -1,8 +1,6 @@
 # WarpRadar
 
-# STILL UNDER ACTIVE DEVELOPMENT
-
-**Decentralized Terminal File Sharing & LAN Messaging**
+### Decentralized Terminal File Sharing & LAN Messaging
 
 WarpRadar is a retro-futuristic TUI for secure local network communication — share files, beam clipboards, and chat in real-time, all encrypted, zero configuration required.
 
@@ -44,7 +42,15 @@ WarpRadar is a retro-futuristic TUI for secure local network communication — s
 
 ## Quick Start
 
-### Installation
+### Option A: Direct Download (Precompiled Binary)
+For a zero-dependency setup, download the standalone native executable directly from the [GitHub Releases Page](https://github.com/adithyaathreya2264/WarpRadar/releases/tag/warpradar.exe). No Python installation or dependencies are required.
+
+**[Download WarpRadar (`warpradar.exe`)](https://github.com/adithyaathreya2264/WarpRadar/releases/download/warpradar.exe/warpradar.exe)**
+
+Simply download `warpradar.exe` (Windows) or the platform-equivalent binary, and run it directly.
+
+### Option B: Installation from Source (Python)
+If you prefer running from source or want to modify the code:
 
 ```bash
 # Clone and enter directory
@@ -59,8 +65,23 @@ python -m venv .venv
 pip install -e .
 ```
 
-### Running WarpRadar
+---
 
+## Running WarpRadar
+
+### From Precompiled Binary
+Run the executable directly in your terminal:
+```bash
+# Terminal 1 (default port 5556)
+./dist/warpradar.exe
+
+# Terminal 2 (different port for same-machine testing)
+$env:WARPRADAR_TCP_PORT=5557
+./dist/warpradar.exe
+```
+
+### From Python Source
+Activate the virtual environment and run the package:
 ```bash
 # Terminal 1 (default port 5556)
 warpradar
@@ -72,10 +93,10 @@ warpradar
 
 ### First-Time Usage
 
-1. **Launch** — Start WarpRadar on one or more devices on the same LAN
-2. **Discover** — Peers appear automatically as blips on the radar
-3. **Select** — Use `↑`/`↓` arrow keys to highlight a peer
-4. **Act** — Press `F` to beam a file, `M` to chat, `C` to warp clipboard
+1. **Launch** — Start WarpRadar on one or more devices on the same LAN (either via precompiled binary or from source).
+2. **Discover** — Peers appear automatically as blips on the radar.
+3. **Select** — Use `↑`/`↓` arrow keys to highlight a peer.
+4. **Act** — Press `F` to beam a file, `M` to chat, `C` to warp clipboard.
 
 ---
 
@@ -210,6 +231,26 @@ pip install pytest pytest-asyncio
 # Run the test suite
 python -m pytest tests/ -v
 ```
+
+---
+
+## Compiling Standalone Executable (Nuitka)
+
+WarpRadar can be compiled into a single, standalone native executable using **Nuitka**. This bundles Python, all dependencies (Textual, Cryptography, Pyperclip, Watchdog), and assets (TCSS theme) into a single file that can run without Python installed.
+
+### Compilation Prerequisites
+Ensure you have a C compiler installed (like MSVC or MinGW on Windows, GCC/Clang on macOS/Linux), and Nuitka is installed in your environment:
+```bash
+pip install nuitka
+```
+
+### Build Command
+Run the following command from the root of the project to build the standalone `.exe` (Windows example):
+```bash
+python -m nuitka --standalone --onefile --assume-yes-for-downloads --python-flag=-m --include-package=warpradar --include-package=textual --include-package=rich --include-package=cryptography --include-package=pyperclip --include-package=watchdog --include-data-dir=warpradar/ui=warpradar/ui --output-filename=warpradar.exe --output-dir=dist warpradar
+```
+
+The compiled binary will be located at `dist/warpradar.exe`.
 
 ---
 
