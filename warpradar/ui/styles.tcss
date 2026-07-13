@@ -57,6 +57,7 @@ Screen {
     width: 1.5fr;
     min-width: 35;
     height: 100%;
+    display: none;
 }
 
 /* Progress bar area */
