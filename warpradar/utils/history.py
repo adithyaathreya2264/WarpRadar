@@ -6,6 +6,8 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import List, Optional
 
+from .format import format_bytes, format_speed as _format_speed
+
 
 @dataclass
 class TransferRecord:
@@ -33,21 +35,11 @@ class TransferRecord:
     
     def format_size(self) -> str:
         """Format filesize as human-readable."""
-        size = self.filesize
-        for unit in ["B", "KB", "MB", "GB"]:
-            if size < 1024:
-                return f"{size:.1f} {unit}"
-            size /= 1024
-        return f"{size:.1f} TB"
+        return format_bytes(self.filesize)
     
     def format_speed(self) -> str:
         """Format speed as human-readable."""
-        speed = self.speed_bps
-        for unit in ["B/s", "KB/s", "MB/s", "GB/s"]:
-            if speed < 1024:
-                return f"{speed:.1f} {unit}"
-            speed /= 1024
-        return f"{speed:.1f} TB/s"
+        return _format_speed(self.speed_bps)
     
     def format_duration(self) -> str:
         """Format duration as human-readable."""
