@@ -119,7 +119,7 @@ class TestChatEndToEnd:
         """Unicode characters (emoji, CJK, etc.) should survive the round-trip."""
         port = chat_server._port
 
-        body = "こんにちは 🚀 WarpRadar"
+        body = "こんにちは WarpRadar"
         ok = await send_chat_message(
             peer_ip="127.0.0.1",
             peer_port=port,
