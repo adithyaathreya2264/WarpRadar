@@ -11,87 +11,87 @@ print("[1] Testing basic imports...")
 # Test each import separately
 try:
     from warpradar.config import config
-    print("   ✓ config")
+    print("config")
 except Exception as e:
     print(f"   ✗ config: {e}")
 
 try:
     from warpradar.discovery.beacon import Beacon
-    print("   ✓ beacon")
+    print("beacon")
 except Exception as e:
-    print(f"   ✗ beacon: {e}")
+    print(f"beacon: {e}")
 
 try:
     from warpradar.discovery.listener import Listener
-    print("   ✓ listener")
+    print("listener")
 except Exception as e:
-    print(f"   ✗ listener: {e}")
+    print(f"listener: {e}")
 
 try:
     from warpradar.discovery.registry import PeerRegistry, Peer
-    print("   ✓ registry")
+    print("registry")
 except Exception as e:
-    print(f"   ✗ registry: {e}")
+    print(f"registry: {e}")
 
 try:
     from warpradar.transport.server import TransferServer
-    print("   ✓ server")
+    print("server")
 except Exception as e:
-    print(f"   ✗ server: {e}")
+    print(f"server: {e}")
 
 try:
     from warpradar.transport.client import send_file, push_clipboard
-    print("   ✓ client")
+    print("client")
 except Exception as e:
-    print(f"   ✗ client: {e}")
+    print(f"client: {e}")
 
 try:
     from warpradar.ui.radar import RadarWidget
-    print("   ✓ radar widget")
+    print("radar widget")
 except Exception as e:
-    print(f"   ✗ radar widget: {e}")
+    print(f"radar widget: {e}")
 
 try:
     from warpradar.ui.peer_list import PeerListWidget
-    print("   ✓ peer_list widget")
+    print("peer_list widget")
 except Exception as e:
-    print(f"   ✗ peer_list widget: {e}")
+    print(f"peer_list widget: {e}")
 
 try:
     from warpradar.ui.progress import ProgressWidget
-    print("   ✓ progress widget")
+    print("progress widget")
 except Exception as e:
-    print(f"   ✗ progress widget: {e}")
+    print(f"progress widget: {e}")
 
 try:
     from warpradar.ui.notifications import ToastWidget, TransferRequestModal
-    print("   ✓ notifications")
+    print("notifications")
 except Exception as e:
-    print(f"   ✗ notifications: {e}")
+    print(f"notifications: {e}")
 
 try:
     from warpradar.ui.file_picker import QuickFilePickerModal, FilePickerModal
-    print("   ✓ file_picker")
+    print("file_picker")
 except Exception as e:
-    print(f"   ✗ file_picker: {e}")
+    print(f"file_picker: {e}")
 
 try:
     from warpradar.utils.system import get_system_info
-    print("   ✓ system")
+    print("system")
 except Exception as e:
-    print(f"   ✗ system: {e}")
+    print(f"system: {e}")
 
 try:
     from warpradar.utils.clipboard import get_clipboard, set_clipboard
-    print("   ✓ clipboard")
+    print("clipboard")
 except Exception as e:
-    print(f"   ✗ clipboard: {e}")
+    print(f"clipboard: {e}")
 
 try:
     from warpradar.utils.history import TransferHistory
-    print("   ✓ history")
+    print("history")
 except Exception as e:
-    print(f"   ✗ history: {e}")
+    print(f"history: {e}")
 
 print("\n[2] Testing widget instantiation...")
 
@@ -105,12 +105,12 @@ class TestApp(App):
         yield Footer()
     
     def on_mount(self) -> None:
-        print("   ✓ on_mount called!")
+        print("on_mount called!")
 
 print("[3] Creating app instance...")
 app = TestApp()
-print("   ✓ App created")
+print("App created")
 
 print("[4] Running app (press Q to quit)...")
 app.run()
-print("   ✓ App exited cleanly")
+print("App exited cleanly")
