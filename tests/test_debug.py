@@ -20,10 +20,10 @@ try:
     logger.info("Starting WarpRadar...")
     
     from warpradar.app import WarpRadarApp
-    logger.info("✓ App imported successfully")
+    logger.info("App imported successfully")
     
     app = WarpRadarApp()
-    logger.info("✓ App instance created")
+    logger.info("App instance created")
     
     logger.info("Running app...")
     app.run()
@@ -35,7 +35,7 @@ except Exception as e:
     
     # Print specific socket error info
     if "socket" in str(e).lower() or "bind" in str(e).lower():
-        logger.error("\n⚠️  SOCKET BINDING ERROR DETECTED")
+        logger.error("\nSOCKET BINDING ERROR DETECTED")
         logger.error("Possible causes:")
         logger.error("1. Port 5555 (UDP) or 5556 (TCP) already in use")
         logger.error("2. Windows firewall blocking multicast")
