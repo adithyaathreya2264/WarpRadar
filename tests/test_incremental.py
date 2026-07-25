@@ -13,7 +13,7 @@ try:
     from warpradar.config import config
     print("config")
 except Exception as e:
-    print(f"   ✗ config: {e}")
+    print(f"    config: {e}")
 
 try:
     from warpradar.discovery.beacon import Beacon
