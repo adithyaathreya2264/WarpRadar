@@ -38,9 +38,9 @@ async def test_all_bindings():
         await pilot.press("s")
         await asyncio.sleep(0.5)
         if any("Stealth" in msg for msg, _ in app.captured_toasts):
-            print("  ✅ Stealth mode triggered successfully!")
+            print("Stealth mode triggered successfully!")
         else:
-            print("  ❌ Stealth mode did NOT trigger")
+            print("Stealth mode did NOT trigger")
             print(f"     Captured: {app.captured_toasts}")
         
         print("\n[2] Testing BLACK HOLE (B)...")
@@ -48,9 +48,9 @@ async def test_all_bindings():
         await pilot.press("b")
         await asyncio.sleep(0.5)
         if any("Black Hole" in msg for msg, _ in app.captured_toasts):
-            print("  ✅ Black Hole triggered successfully!")
+            print("Black Hole triggered successfully!")
         else:
-            print("  ❌ Black Hole did NOT trigger")
+            print("Black Hole did NOT trigger")
             print(f"     Captured: {app.captured_toasts}")
         
         print("\n[3] Testing BEAM FILE (F)...")
@@ -58,9 +58,9 @@ async def test_all_bindings():
         await pilot.press("f")
         await asyncio.sleep(0.5)
         if any("Beam" in msg or "peer" in msg.lower() for msg, _ in app.captured_toasts):
-            print("  ✅ Beam File triggered successfully!")
+            print("Beam File triggered successfully!")
         else:
-            print("  ❌ Beam File did NOT trigger")
+            print("Beam File did NOT trigger")
             print(f"     Captured: {app.captured_toasts}")
         
         print("\n[4] Testing WARP CLIPBOARD (C)...")
@@ -68,9 +68,9 @@ async def test_all_bindings():
         await pilot.press("c")
         await asyncio.sleep(0.5)
         if any("Warp" in msg or "Clipboard" in msg or "peer" in msg.lower() for msg, _ in app.captured_toasts):
-            print("  ✅ Warp Clipboard triggered successfully!")
+            print("Warp Clipboard triggered successfully!")
         else:
-            print("  ❌ Warp Clipboard did NOT trigger")
+            print("Warp Clipboard did NOT trigger")
             print(f"     Captured: {app.captured_toasts}")
         
         print("\n" + "=" * 60)
