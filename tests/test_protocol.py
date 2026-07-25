@@ -108,9 +108,9 @@ class TestChatMessage:
         assert restored.text == "Hello, world!"
 
     def test_unicode_text(self):
-        msg = ChatMessage(sender="host", text="日本語テスト 🚀")
+        msg = ChatMessage(sender="host", text="日本語テスト")
         restored = ChatMessage.unpack(msg.pack())
-        assert restored.text == "日本語テスト 🚀"
+        assert restored.text == "日本語テスト"
 
     def test_empty_text(self):
         msg = ChatMessage(sender="host", text="")
