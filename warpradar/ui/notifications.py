@@ -82,7 +82,7 @@ class TransferRequestModal(ModalScreen):
         primary = config.ui.primary_color
         
         with Container(id="dialog"):
-            yield Static("⚡ INCOMING TRANSMISSION", id="title")
+            yield Static(" INCOMING TRANSMISSION", id="title")
             yield Static(
                 f"From: [bold]{self.sender}[/bold]\n"
                 f"File: [bold]{self.filename}[/bold]\n"
