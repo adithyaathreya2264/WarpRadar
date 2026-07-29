@@ -83,7 +83,7 @@ class FilePickerModal(ModalScreen):
     def compose(self) -> ComposeResult:
         """Compose the file picker layout."""
         with Container(id="file-dialog"):
-            yield Static("📁 SELECT FILE TO BEAM", id="title")
+            yield Static("SELECT FILE TO BEAM", id="title")
             yield Static(f"Path: {self.start_path}", id="current-path")
             
             # File tree
@@ -113,7 +113,7 @@ class FilePickerModal(ModalScreen):
             else:
                 # Show error - no file selected
                 self.query_one("#selected-file", Static).update(
-                    "⚠ Please select a file"
+                    " Please select a file"
                 )
         else:
             self.dismiss(None)
@@ -192,15 +192,15 @@ class QuickFilePickerModal(ModalScreen):
     def compose(self) -> ComposeResult:
         """Compose the quick picker."""
         with Container(id="quick-dialog"):
-            yield Static("📁 SELECT FILE LOCATION", id="title")
+            yield Static(" SELECT FILE LOCATION", id="title")
             
             with VerticalScroll():
                 # Quick access locations
-                yield Button("📂 Desktop", classes="location-button", id="desktop")
-                yield Button("📥 Downloads", classes="location-button", id="downloads")
-                yield Button("📄 Documents", classes="location-button", id="documents")
-                yield Button("🖼️ Pictures", classes="location-button", id="pictures")
-                yield Button("🏠 Home", classes="location-button", id="home")
+                yield Button(" Desktop", classes="location-button", id="desktop")
+                yield Button(" Downloads", classes="location-button", id="downloads")
+                yield Button(" Documents", classes="location-button", id="documents")
+                yield Button(" Pictures", classes="location-button", id="pictures")
+                yield Button(" Home", classes="location-button", id="home")
             
             yield Static("Or enter custom path:", id="custom-path")
             self._input = Input(placeholder="Enter file path...")
