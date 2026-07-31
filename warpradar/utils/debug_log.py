@@ -7,8 +7,7 @@ from datetime import datetime
 # Log file location
 LOG_FILE = Path.home() / "warpradar_debug.log"
 
-# TUI mode flag — when True, suppress stdout output to avoid
-# corrupting the Textual terminal rendering.
+# TUI mode flag — when True, suppress stdout output to avoid corrupting the Textual terminal rendering.
 _TUI_MODE = False
 
 
