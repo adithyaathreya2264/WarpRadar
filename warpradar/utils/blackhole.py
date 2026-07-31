@@ -56,7 +56,6 @@ class BlackHole:
         
         self._running = True
         
-        # watchdog requires scheduling in a thread, but we need to call back into asyncio
         loop = asyncio.get_running_loop()
         self._handler = BlackHoleHandler(self._handle_file, loop)
         
